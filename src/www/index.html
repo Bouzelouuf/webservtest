@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebServ - HTTP Server</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .feature {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature strong {
+            color: #333;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .upload-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        .links {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .links a {
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .links a:hover {
+            background: #5568d3;
+        }
+
+        footer {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🚀 WebServ</h1>
+        <p class="subtitle">A high-performance HTTP/1.1 server written in C++98</p>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="section">
+                <h2>📋 Features</h2>
+                <div class="features">
+                    <div class="feature">
+                        <strong>HTTP Methods</strong>
+                        <span>GET, POST, DELETE</span>
+                    </div>
+                    <div class="feature">
+                        <strong>Static Files</strong>
+                        <span>Serve HTML, CSS, JS, images</span>
+                    </div>
+                    <div class="feature">
+                        <strong>File Uploads</strong>
+                        <span>Upload files via POST</span>
+                    </div>
+                    <div class="feature">
+                        <strong>CGI Support</strong>
+                        <span>Execute Python, PHP scripts</span>
+                    </div>
+                    <div class="feature">
+                        <strong>Auto-index</strong>
+                        <span>Directory listings</span>
+                    </div>
+                    <div class="feature">
+                        <strong>Non-blocking I/O</strong>
+                        <span>Using poll() for scalability</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📤 Upload File</h2>
+                <div class="upload-form">
+                    <form action="/uploads" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="file">Choose a file to upload:</label>
+                            <input type="file" id="file" name="file" required>
+                        </div>
+                        <button type="submit">Upload</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🔗 Quick Links</h2>
+                <div class="links">
+                    <a href="/uploads">View Uploads</a>
+                    <a href="/cgi-bin/test.py">Test CGI</a>
+                    <a href="/about.html">About</a>
+                    <a href="/contact.html">Contact</a>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>ℹ️ Server Information</h2>
+                <div class="features">
+                    <div class="feature">
+                        <strong>Version</strong>
+                        <span>1.0.0</span>
+                    </div>
+                    <div class="feature">
+                        <strong>Protocol</strong>
+                        <span>HTTP/1.1</span>
+                    </div>
+                    <div class="feature">
+                        <strong>Language</strong>
+                        <span>C++98</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>WebServ - Built with ❤️ using C++98 | © 2025</p>
+    </footer>
+</body>
+</html>

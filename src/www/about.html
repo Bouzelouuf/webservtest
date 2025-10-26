@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - WebServ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+        }
+        p {
+            line-height: 1.6;
+            color: #333;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>About WebServ</h1>
+        <p>
+            WebServ is a high-performance HTTP/1.1 server implementation written in C++98.
+            It was created as part of the 42 school curriculum to understand the fundamentals
+            of web servers and network programming.
+        </p>
+        <p>
+            This server implements core HTTP features including:
+        </p>
+        <ul>
+            <li>Non-blocking I/O using poll()</li>
+            <li>Multiple server instances on different ports</li>
+            <li>GET, POST, and DELETE methods</li>
+            <li>Static file serving</li>
+            <li>File upload functionality</li>
+            <li>CGI support for dynamic content</li>
+            <li>Custom error pages</li>
+            <li>Directory listing</li>
+        </ul>
+        <p>
+            <a href="/">← Back to Home</a>
+        </p>
+    </div>
+</body>
+</html>

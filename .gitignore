@@ -1,0 +1,8 @@
+webserv
+*.a
+.vscode/
+.DS_Store
+uploads/
+*.log
+obj
+.vscode

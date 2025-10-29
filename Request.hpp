@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <vector>
 #include <fstream>
+#include <sys/stat.h>
 
 struct UploadedFile
 {
@@ -68,10 +69,12 @@ class HttpRequest
         std::map<std::string, std::string> cookies;
     
         std::map<std::string, UploadedFile> uploaded_files;
-		bool complete;
-		public:
+        bool is_chunked;
+
+
+    public:
         HttpRequest();
-        bool parse(std::string data);
+        void parse(std::string request);
         std::string getMethod()const;
         std::string getUri()const;
         std::string getVersion()const;
@@ -94,8 +97,21 @@ class HttpRequest
         bool hasFile(const std::string& field_name) const;
         UploadedFile getFile(const std::string& field_name) const;
         std::vector<std::string> getFileNames() const;
-		bool isComplete() const;
-	private:
+
+        bool isRegularFile(const std:: string &path)const;
+        bool isDirectory(const std::string& path_directory) const;
+        bool fileExists(const std::string& path) const;
+        size_t getFileSize(const std::string& path) const;
+        bool canRead(const std::string& path) const;
+        bool canWrite(const std::string& path) const;
+        bool canExecute(const std::string& path) const;
+
+        bool isChunked()const;
+
+        void parsedChunkedBody(const std::string& raw_body);
+        std::string dechunkBody(const std::string& chunked_data);
+//pas sur que ce doit etre la , peut etre private
+    private:
         void validateContentLength();
         std::string toLower(const std::string& str)const;
         void validateVersion();
@@ -111,5 +127,4 @@ class HttpRequest
         void parseSinglePart(const std::string& part);
 
 };
-
 #endif

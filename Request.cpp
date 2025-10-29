@@ -1,12 +1,12 @@
-#include "HttpRequest.hpp"
+#include "Request.hpp"
 
-HttpRequest::HttpRequest():content_length(0),has_content_length(false),complete(false){}
+HttpRequest::HttpRequest(): content_length(0), has_content_length(false),is_chunked(false){}
 
-bool HttpRequest::parse(std::string data)
+void HttpRequest::parse(std::string request)
 {
     //on converti en stream la str pour eviter direct les 
     //espace entre les infos
-    std::istringstream stream(data);
+    std::istringstream stream(request);
     std::string line;
 
     //on va lire la premier ligne
@@ -59,16 +59,32 @@ bool HttpRequest::parse(std::string data)
         headers[key] = value;
     }
     validateHost();
+    std::string transfer_encoding = getHeader("transfer-encoding");
+    if (transfer_encoding == "chunked" && hasContentLength())
+        throw std::runtime_error("400 Bad Request: Content-Length with Transfer-Encoding");
+    if (transfer_encoding == "chunked" )
+    {
+        is_chunked = true;
+        size_t body_start = request.find("\r\n\r\n");
+        if (body_start != std::string::npos)
+        {
+            body_start += 4;
+            std::string raw_body = request.substr(body_start);
+            body = dechunkBody(raw_body);
+        }
+    }
+    else if (hasContentLength())
+    {
+        size_t body_start = request.find("\r\n\r\n");
+        if (body_start != std::string::npos)
+        {
+            body_start += 4;
+            body = request.substr(body_start);
+        }
+        validateContentLength();
+        parsePostBody();
+    }
     parseCookies();
-    std::string body_contain;
-    char c;
-    while (stream.get(c))
-        body_contain += c;
-    body = body_contain;
-    validateContentLength();
-    parsePostBody();
-	complete = true;
-	return true;
 }
 
 void HttpRequest::validateContentLength()
@@ -671,6 +687,8 @@ UploadedFile HttpRequest::getFile(const std::string& field_name) const
     
     if (it != uploaded_files.end())
         return it->second;
+    
+    // Retourner un fichier vide si non trouvé
     return UploadedFile();
 }
 
@@ -687,7 +705,95 @@ std::vector<std::string> HttpRequest::getFileNames() const
     return names;
 }
 
-bool HttpRequest::isComplete()const
+bool HttpRequest::isRegularFile(const std:: string &path)const
 {
-	return complete;
+    struct stat path_stat;
+    //struct pour savoir si c un dossier ou file valide
+    // comme une fiche id pour un file
+    if (stat(path.c_str(), &path_stat) != 0)
+        //on pass le file dans la stuct qui se remplie avecc stat()
+        return false;
+        //stat va retourner -1 si error ( file exist pas)
+    return S_ISREG(path_stat.st_mode);
+    //st mode contient des bits qui encodent type + permission ( pas tres clair)
+    //s isreg est une macro qui test les bits de st mode
+    //true si file normal 
+}
+
+bool HttpRequest::isDirectory(const std::string &path_directory)const
+{
+    struct stat path_stat;
+
+    if (stat(path_directory.c_str(), &path_stat) != 0)
+        return false;
+    return S_ISDIR(path_stat.st_mode);
+    //c pareil a ca pret que la macro est s _ is dir
+}
+
+bool HttpRequest::fileExists(const std::string &path)const
+{
+    return (access(path.c_str(), F_OK) == 0);
+    //access () test l'accessibliter dun file 
+    // F_ok test son existence juste
+    // 0 si file existe else -1 
+}
+
+size_t HttpRequest::getFileSize(const std::string &path)const
+{
+    struct stat path_stat;
+
+    if (stat(path.c_str(), &path_stat) != 0)
+        return 0; //erreur = taille 0
+
+    return static_cast<size_t>(path_stat.st_size);
+}
+
+bool HttpRequest::canRead(const std::string &path)const
+{
+    return (access(path.c_str(), R_OK) == 0);
+}
+
+bool HttpRequest::canWrite(const std::string &path)const
+{
+    // pour upload delete
+    return (access(path.c_str(), W_OK) == 0);
+}
+
+bool HttpRequest::canExecute(const std::string &path)const
+{
+    return (access(path.c_str(), X_OK) == 0);
+    // pour differents script cgi
+}
+
+void HttpRequest::parsedChunkedBody(const std::string &raw_body)
+{
+    (void)raw_body;
+    return;
+}
+
+std::string HttpRequest::dechunkBody(const std::string &chunked_data)
+{
+    std::string result;
+    
+    size_t pos = 0;
+    while (true)
+    {
+        size_t line_end = chunked_data.find("\r\n", pos);
+        if (line_end == std::string::npos)
+            throw std::runtime_error("400 Bad Request: Invalid chunk");
+        std::string size_line = chunked_data.substr(pos, line_end - pos);
+        size_t chunk_size = strtol(size_line.c_str(), NULL, 16);
+        // convert hexa a decimal
+        if (chunk_size == 0)
+            break;
+        pos = line_end + 2; // on saute \r\n pour ligne suivante
+        result += chunked_data.substr(pos, chunk_size);
+        pos = pos + chunk_size + 2;
+    }
+    return result;
+}
+
+bool HttpRequest::isChunked()const
+{
+    return is_chunked;
 }

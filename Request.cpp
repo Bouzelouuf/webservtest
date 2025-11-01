@@ -1,6 +1,6 @@
 #include "Request.hpp"
 
-HttpRequest::HttpRequest(): content_length(0), has_content_length(false),is_chunked(false){}
+HttpRequest::HttpRequest(): content_length(0), has_content_length(false),is_chunked(false), error_code(0), error_message(""){}
 
 void HttpRequest::parse(std::string request)
 {
@@ -25,8 +25,14 @@ void HttpRequest::parse(std::string request)
     // >> saute automatiquement les espaces , mais stock ce que tu trouve avant dant >> method
     // puis dans >> uri puis dans version
     validateMethod();
+    if (!isValid())
+        return;
     validateVersion();
+    if (!isValid())
+        return;
     validateUri();
+    if (!isValid())
+        return;
     parseQueryString();
     while (std::getline(stream, line))
     {
@@ -59,9 +65,16 @@ void HttpRequest::parse(std::string request)
         headers[key] = value;
     }
     validateHost();
+    if (!isValid())
+        return;
     std::string transfer_encoding = getHeader("transfer-encoding");
     if (transfer_encoding == "chunked" && hasContentLength())
-        throw std::runtime_error("400 Bad Request: Content-Length with Transfer-Encoding");
+    {
+        error_code = 400;
+        error_message = "Bad Request: Content-Length with Transfer-Encoding";
+        return;
+        //throw std::runtime_error("400 Bad Request: Content-Length with Transfer-Encoding");
+    }
     if (transfer_encoding == "chunked" )
     {
         is_chunked = true;
@@ -73,7 +86,7 @@ void HttpRequest::parse(std::string request)
             body = dechunkBody(raw_body);
         }
     }
-    else if (hasContentLength())
+    else if (headers.find("content-length") != headers.end())
     {
         size_t body_start = request.find("\r\n\r\n");
         if (body_start != std::string::npos)
@@ -82,6 +95,8 @@ void HttpRequest::parse(std::string request)
             body = request.substr(body_start);
         }
         validateContentLength();
+        if (!isValid())
+            return;
         parsePostBody();
     }
     parseCookies();
@@ -103,20 +118,29 @@ void HttpRequest::validateContentLength()
         if (!(input_strring_stream >> content_length))
         {
             std::cerr << "Error: Invalid Content-Length format" << std::endl;
-            throw std::runtime_error("400 Bad HttpRequest: Invalid Content-Length");
+            error_code = 400;
+            error_message = "Bad Request: Invalid Content-Length";
+            return;
+            //throw std::runtime_error("400 Bad HttpRequest: Invalid Content-Length");
         }
         if (content_length > MAX_BODY_SIZE)
         {
             std::cerr   << "Error: Content-Length too large (" << content_length
                         << " > " << MAX_BODY_SIZE << ")" << std::endl;
-            throw std::runtime_error("413 Payload Too Large");
+            error_code = 413;
+            error_message = "Payload Too Large";    
+            return;            
+            //throw std::runtime_error("413 Payload Too Large");
         }
         if (body.length() != content_length)
         {
             std::cerr << "Error: Content-Length mismatch!" << std::endl;
             std::cerr << "  Declared in header: " << content_length << std::endl;
             std::cerr << "  Actual body length: " << body.length() << std::endl;
-            throw std::runtime_error("400 Bad HttpRequest: Content-Length mismatch");
+            error_code = 400;
+            error_message = "Bad Request: Content-Length mismatch";
+            return;
+            //throw std::runtime_error("400 Bad HttpRequest: Content-Length mismatch");
         }
         std::cout << "Content-Length validated: " << content_length << " bytes" << std::endl;
     }
@@ -128,7 +152,9 @@ void HttpRequest::validateContentLength()
         {
             std::cerr   << "Error: Body too large without Content-Length(" << body.length()
                         << " > " << MAX_BODY_SIZE << ")" << std::endl;
-            throw std::runtime_error("413 Payload Too Large");
+            error_code = 413;        
+            error_message = "Payload Too Large";
+            //throw std::runtime_error("413 Payload Too Large");
         }
         if ((method == "POST" || method == "PUT") && !body.empty())
         {
@@ -202,12 +228,19 @@ void HttpRequest::validateMethod()
     if (method.empty())
     {
         std::cerr << "Error: Method is empty" << std::endl;
-        throw std::runtime_error("400 Bad HttpRequest: No method specified");
+        error_code = 400;
+        error_message = "Bad HttpRequest: No method specified";
+        return;
+        //throw std::runtime_error("400 Bad HttpRequest: No method specified");
     }
     if (!isMethodValid(method))
     {
+            
         std::cerr << "Error: Invalid HTTP method: " << method << std::endl; 
-        throw std::runtime_error("405 Method Not Allowed");
+        error_code = 405;
+        error_message = "Method Not Allowed";
+        //std::cerr << "Error: Invalid HTTP method: " << method << std::endl; 
+        //throw std::runtime_error("405 Method Not Allowed");
     }
     std::cout << "Method validated: " << method << std::endl;
 }
@@ -225,12 +258,17 @@ void HttpRequest::validateVersion()
     if (version.empty())
     {
         std::cerr << "Error: HTTP version is empty" << std::endl;
-        throw std::runtime_error("400 Bad HttpRequest: No HTTP version specified");
+        error_code = 400;
+        error_message = "Bad pRequest: No HTTP version specified";
+        return;
+        //throw std::runtime_error("400 Bad pRequest: No HTTP version specified");
     }
     if (version != "HTTP/1.0" && version != "HTTP/1.1")
     {
         std::cerr << "Error: Unsupported HTTP Version: " << version << std::endl;
-        throw std::runtime_error("505 HTTP Version Not Supported");
+        error_code = 505;
+        error_message = "HTTP Version Not Supported";
+        // throw std::runtime_error("505 HTTP Version Not Supported");
     }
     std::cout << "Version validated" << std::endl;
 }
@@ -241,19 +279,36 @@ void HttpRequest::validateUri()
     if (uri.empty())
     {
         std::cerr << "Error: URI is empty" << std::endl;
-        throw std::runtime_error("400 Bad HttpRequest: No URI specified");
+        error_code = 400;
+        error_message = "Bad Request: No URI specified";
+        return;
+        //throw std::runtime_error("400 Bad HttpRequest: No URI specified");
     }
     if (uri.size() > max_uri_len)
     {
         std::cerr   << "Error: URI too long (" << uri.length() 
                     << " > " << max_uri_len <<std::endl;
-        throw std::runtime_error("414 URI Too long");
+        error_code = 414;
+        error_message = "URI Too Long";
+        return;
+        //throw std::runtime_error("414 URI Too long");
     }
     if (uri[0] != '/')
-        {
-            std::cerr << "Error: URI must start with '/': " << uri << std::endl;
-            throw std::runtime_error("400 Bad HttpRequest: Invalid URI format");
-        }
+    {
+        std::cerr << "Error: URI must start with '/': " << uri << std::endl;
+        error_code = 400;
+        error_message = "Bad Request: Invalid URI format";
+        return;
+        //throw std::runtime_error("400 Bad HttpRequest: Invalid URI format");
+    }
+    if (uri.find("../") != std::string::npos)
+    {
+        std::cerr << "Err: Path traversal attempt detected: " << uri << std::endl;
+        error_code = 400;
+        error_message = "Bad Request: Path traversal not allowed";
+        return;
+        //throw std::runtime_error("400 Bad Request: Path traversal not allowd");
+    }
     std::cout << "URI validated: " << uri << std::endl;
 
 }
@@ -267,12 +322,18 @@ void HttpRequest::validateHost()
         //si host nexist pas
         {
             std::cerr << "Error: Host header missing (required for HTTP/1.1)" << std::endl;
-            throw std::runtime_error("400 Bad HttpRequest: Host header required");
+            error_code = 400;
+            error_message = "Bad Request: Host header required";
+            return;
+            //throw std::runtime_error("400 Bad HttpRequest: Host header required");
         }
         if (it->second.empty())
         {
             std::cerr << "Error: Host header is empty" << std::endl;
-            throw std::runtime_error("400 Bad HttpRequest: Host header cannot be empty");
+            error_code = 400;
+            error_message = "Bad Request: Host header cannot be empty";
+            return;
+            //throw std::runtime_error("400 Bad HttpRequest: Host header cannot be empty");
         }
         std::cout << "Host validated: " << it->second << std::endl;
     }
@@ -796,4 +857,19 @@ std::string HttpRequest::dechunkBody(const std::string &chunked_data)
 bool HttpRequest::isChunked()const
 {
     return is_chunked;
+}
+
+bool HttpRequest::isValid()const
+{
+    return error_code == 0;
+}
+
+int HttpRequest::getErrorCode()const
+{
+    return error_code;
+}
+
+std::string HttpRequest::getErrorMessage()const
+{
+    return error_message;
 }

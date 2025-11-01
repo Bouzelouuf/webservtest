@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test FileHandler</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Test FileHandler - Fichiers Statiques</h1>
+        
+        <h2>✅ Si tu vois cette page stylée, HTML + CSS marchent !</h2>
+        
+        <div class="test-section">
+            <h3>Test 1 : Image PNG</h3>
+            <img src="/test-image.png" alt="Test Image" width="200">
+            <p>👆 Si tu vois une image, PNG marche !</p>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 2 : Image JPG</h3>
+            <img src="/test-photo.jpg" alt="Test Photo" width="200">
+            <p>👆 Si tu vois une photo, JPG marche !</p>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 3 : JavaScript</h3>
+            <button onclick="testJS()">Clique ici pour tester JS</button>
+            <p id="js-result">Attente du clic...</p>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 4 : Fichier inexistant (404)</h3>
+            <img src="/nexistepas.png" alt="404 test" width="100">
+            <p>👆 Devrait afficher icône cassée (404)</p>
+        </div>
+    </div>
+    
+    <script src="/script.js"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@
 #include <vector>
 #include <fstream>
 #include <sys/stat.h>
+#include <unistd.h>
 
 struct UploadedFile
 {
@@ -71,7 +72,8 @@ class HttpRequest
         std::map<std::string, UploadedFile> uploaded_files;
         bool is_chunked;
 
-
+        int error_code;
+        std::string error_message;
     public:
         HttpRequest();
         void parse(std::string request);
@@ -111,6 +113,10 @@ class HttpRequest
         void parsedChunkedBody(const std::string& raw_body);
         std::string dechunkBody(const std::string& chunked_data);
 //pas sur que ce doit etre la , peut etre private
+
+        bool isValid()const;
+        int getErrorCode()const;
+        std::string getErrorMessage()const;
     private:
         void validateContentLength();
         std::string toLower(const std::string& str)const;
